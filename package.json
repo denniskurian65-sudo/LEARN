@@ -1,0 +1,14 @@
+{
+  "name": "dennis-fieldnotes",
+  "version": "1.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "node scripts/serve.mjs",
+    "start": "node scripts/serve.mjs",
+    "build": "node scripts/build.mjs",
+    "test": "node tests/curriculum.test.mjs",
+    "deploy": "node scripts/publish-pages.mjs"
+  },
+  "engines": { "node": ">=22" }
+}
