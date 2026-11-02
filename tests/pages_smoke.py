@@ -26,7 +26,7 @@ async def check(port):
         page.on('response', lambda r: failed.append(r.url) if r.status >= 400 else None)
         await page.goto(f'http://127.0.0.1:{port}/LEARN/', wait_until='networkidle')
         assert 'Fieldnotes' in await page.title()
-        assert await page.locator('.welcome-banner').evaluate("e => getComputedStyle(e).backgroundColor") == 'rgb(23, 62, 49)'
+        assert await page.locator('.welcome-banner').evaluate("e => getComputedStyle(e).backgroundColor") == 'rgb(8, 71, 52)'
         await page.locator('#run-code').click()
         await page.wait_for_function("document.querySelector('#run-status').textContent.startsWith('Done.')", timeout=180000)
         assert 'Hello, Kitchener!' in await page.locator('#output').inner_text()
