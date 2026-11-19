@@ -17,8 +17,8 @@ The development server listens on port 5173. Set `PORT` to choose another port. 
 ## What is included
 
 - Two course tabs, a phone menu, and Previous / Next navigation.
-- Days 1-15, with three short lessons and one Mission each day. A day is designed for about 28 minutes, with room to repeat steps.
-- Days 16-21 shown as a roadmap, without unfinished lesson screens.
+- Days 1-21, with three short lessons and one Mission each day. A day is designed for about 28 minutes, with room to repeat steps.
+- The final six days cover canopy comparison, park distance, a planting review shortlist, a map, a guided analysis, and a final project brief.
 - 37 interview questions across eight topics and a mixed flashcard mode. Answers start hidden. Cards marked for more practice return at the end of the session.
 - A Python editor, output, errors, hints, solutions, and Mission checks. Python runs in a Web Worker. Stop interrupts long-running code without freezing the page.
 - Progress, the last course and lesson, quiz checks, and edited code saved in this browser's localStorage. Clearing browser data clears that progress. It does not sync between devices.
@@ -44,7 +44,7 @@ For browser validation, start the server first. In the prepared cloud environmen
 python3 tests/browser_smoke.py
 ```
 
-This runs all 60 examples and all 60 solutions in real browser Python. It also checks the editor, quiz feedback, Mission checks, stopping and restarting Python, saved progress, interview reveal, flashcards, and phone navigation. Screenshots and a runtime report go into ignored `test-results/`. Chromium uses the inherited cloud proxy and normal TLS validation. On another machine, install Playwright and adjust the executable path for your Chromium installation.
+This runs all 84 examples and all 84 solutions in real browser Python. It also checks the editor, quiz feedback, Mission checks, stopping and restarting Python, saved progress, interview reveal, flashcards, and phone navigation. Screenshots and a runtime report go into ignored `test-results/`. Chromium uses the inherited cloud proxy and normal TLS validation. On another machine, install Playwright and adjust the executable path for your Chromium installation.
 
 To test the production files, run `SERVE_DIST=1 PORT=5174 npm start` after building. The generated `dist/` directory can be hosted by a static HTTPS host.
 
@@ -65,8 +65,8 @@ GitHub Pages must also be enabled in the repository. Open the repository's Setti
 
 The Pages smoke check serves the built files under `/LEARN/` and verifies styles, Python, Pandas, GeoPandas, a plotted map, interview answers, and the phone layout. It uses the same prepared Playwright and Chromium tools as the full browser test.
 
-## Adding more days
+## Curriculum files
 
-Lessons 1-5 are in `src/lessons.js`. Days 6-15 are in `src/later-lessons.js`. Interview cards are in `src/interview.js`.
+Lessons 1-5 are in `src/lessons.js`. Days 6-21 are in `src/later-lessons.js`. Interview cards are in `src/interview.js`.
 
-Keep each day short and end it with a Mission. Keep all data creation inside each runnable example. When Dennis asks for more days, prepare enough material to keep at least five days ahead of the current day, up to the planned Day 21 endpoint. Use plain English and his supplied facts. Use the existing isolated checkout; do not create Git worktrees unless Dennis asks for one.
+Keep each day short and end it with a Mission. Keep all data creation inside each runnable example. Use plain English and his supplied facts. Use the existing isolated checkout; do not create Git worktrees unless Dennis asks for one.

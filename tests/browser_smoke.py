@@ -61,7 +61,7 @@ async def main():
             await page.wait_for_timeout(5000)
             count = await page.evaluate('window.curriculumResults.length')
             if count != last_count:
-                print(f'Python browser checks: {count}/60 example + solution pairs', flush=True)
+                print(f'Python browser checks: {count}/84 example + solution pairs', flush=True)
                 last_count = count
             if await page.evaluate('window.curriculumFinished'):
                 break
@@ -71,8 +71,8 @@ async def main():
         (artifacts / 'python-results.json').write_text(json.dumps(results, indent=2))
         failures = [r for r in results if r.get('exampleError') or r.get('solutionError') or not r['previewMatches']]
         assert not failures, json.dumps(failures, indent=2)
-        assert len(results) == 60
-        assert all(r['figures'] == 1 for r in results if r['id'].startswith('d9-'))
+        assert len(results) == 84
+        assert all(r['figures'] == 1 for r in results if r['id'].startswith(('d9-', 'd19-')))
         expected = {
             'd2-mission': 'Maples: 5',
             'd3-mission': 'Biggest TREEID: 104\nDBH: 60',
@@ -82,11 +82,17 @@ async def main():
             'd12-mission': "Outside 800 m: ['B']\nNearby sites: 2",
             'd14-mission': 'Total active trees: 5',
             'd15-mission': 'Canopy cover (%): 31.6',
+            'd16-mission': 'Invented crown estimates.',
+            'd17-mission': 'Straight-line distance from a practice park.',
+            'd18-mission': "Review: ['Practice East']",
+            'd19-mission': "Review: ['Practice East']",
+            'd20-mission': 'Straight-line distance only.',
+            'd21-mission': "Review: ['Practice East']",
         }
         for result in results:
             if result['id'] in expected:
                 assert expected[result['id']] in result['output'], result
-        print('PASS: 120 Python runs, including Pandas, GeoPandas, CRS, spatial joins, buffers, canopy, and 8 figures', flush=True)
+        print('PASS: 168 Python runs, including Pandas, GeoPandas, CRS, spatial joins, buffers, canopy, and 16 figures', flush=True)
         # Mission checking must fail for the starter and pass for the solution.
         await page.locator('#sidebar [data-lesson="d1-mission"]').click()
         await page.locator('#check-mission').click()
@@ -139,9 +145,11 @@ async def main():
         await page.set_viewport_size({'width': 390, 'height': 844})
         await page.locator('[data-course="python"]').click()
         await page.locator('#menu-toggle').click()
-        await page.locator('summary').filter(has_text='Shade, Measured').click()
-        await page.locator('[data-lesson="d15-mission"]').click()
-        assert await page.locator('h2').filter(has_text='Mission: shade').is_visible()
+        await page.locator('summary').filter(has_text='Show-Off Day').click()
+        await page.locator('[data-lesson="d21-mission"]').click()
+        assert await page.locator('h2').filter(has_text='Mission: present your final project').is_visible()
+        assert await page.locator('#next').is_disabled()
+        assert 'end of the course' in await page.locator('.next-chapter').inner_text()
         assert await page.locator('#menu-toggle').get_attribute('aria-expanded') == 'false'
         assert await page.evaluate('document.documentElement.scrollWidth <= innerWidth')
         await page.screenshot(path=str(artifacts / 'mobile.png'), full_page=True)

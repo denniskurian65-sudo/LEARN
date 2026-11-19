@@ -6,10 +6,10 @@ import { interviewTopics, allCards } from '../src/interview.js';
 import { readState, writeState, normalizeOutput, STORAGE_KEY } from '../src/state.js';
 const lessons = [...first, ...laterLessons];
 
-test('Days 1-15 each have three lessons and a final Mission under one hour', () => {
-  assert.equal(lessons.length, 60);
-  assert.equal(new Set(lessons.map(l => l.id)).size, 60);
-  for (let day = 1; day <= 15; day++) {
+test('Days 1-21 each have three lessons and a final Mission under one hour', () => {
+  assert.equal(lessons.length, 84);
+  assert.equal(new Set(lessons.map(l => l.id)).size, 84);
+  for (let day = 1; day <= roadmap.length; day++) {
     const items = lessons.filter(l => l.day === day);
     assert.equal(items.length, 4);
     assert.equal(items.filter(l => l.mission).length, 1);

@@ -77,15 +77,14 @@ function sidebar(python) {
     <div class="progress-box"><div><span>Course progress</span><strong>${count}/${total}</strong></div><progress value="${count}" max="${total}" aria-label="Course completion"></progress><small id="save-note">Saved on this browser</small></div>`;
   if (python) {
     content += `<div class="section-label">THE FIELD ASSIGNMENTS <span>01-15</span></div>`;
-    content += roadmap.map(([title, description], i) => {
+    content += roadmap.map(([title], i) => {
       const day = i + 1;
       const entries = lessons.filter(l => l.day === day);
       const completed = entries.length && entries.every(l => done(l.id));
-      if (!entries.length) return `<div class="roadmap-item"><span class="day-number">${String(day).padStart(2, '0')}</span><span><strong>${esc(title)}</strong><small>${esc(description)}</small><em>Coming later</em></span></div>`;
       return `<details class="day-group ${current().day === day ? 'selected' : ''}" ${current().day === day ? 'open' : ''}>
         <summary><span class="day-number ${completed ? 'finished' : ''}">${completed ? icon('check') : String(day).padStart(2, '0')}</span><span><strong>${esc(title)}</strong><small>${entries.filter(l => done(l.id)).length}/4 steps · about 30 min</small></span><span class="chevron">⌄</span></summary>
         <div class="lesson-links">${entries.map(l => `<button data-lesson="${l.id}" class="lesson-link ${current().id === l.id ? 'current' : ''}" ${current().id === l.id ? 'aria-current="step"' : ''}><span class="lesson-dot ${done(l.id) ? 'complete' : ''}">${done(l.id) ? '✓' : ''}</span><span>${l.mission ? 'Mission' : esc(l.title)}</span>${l.mission ? '<span class="mission-small">⚑</span>' : ''}</button>`).join('')}</div>
-      </details>${day === 15 ? '<div class="section-label upcoming-label">THE ROAD AHEAD <span>16-21</span></div>' : ''}`;
+      </details>`;
     }).join('');
   } else {
     content += '<div class="section-label">SHORT LESSONS & PRACTICE</div>';
@@ -112,7 +111,7 @@ function pythonPage(l) {
       <p class="runtime-note">Python ${l.day >= 8 ? '+ GeoPandas' : l.day >= 5 ? '+ Pandas' : 'via Pyodide'}. The first run downloads the needed libraries. Later runs are faster. An internet connection is needed.</p>
     </section>
     <section class="exercise-card" aria-labelledby="exercise-title"><span class="exercise-icon">${icon(l.mission ? 'tree' : 'check')}</span><div class="exercise-body"><span class="eyebrow">${l.mission ? 'TODAY\'S MISSION' : 'ONE SMALL CHALLENGE'}</span><h3 id="exercise-title">${l.mission ? 'Make the report your own' : 'Give it a go'}</h3><p>${esc(l.task)}</p><details class="hint"><summary>A small hint</summary><p>${esc(l.hint)}</p></details>
-      ${l.mission ? `<button class="button primary" id="check-mission">${icon('check')} Check my mission</button><p class="check-note">Checks your printed result${l.day === 9 ? ', map title, legend, and plotted point count' : ''}. Spacing between table columns can differ.</p>` : quiz(l)}
+      ${l.mission ? `<button class="button primary" id="check-mission">${icon('check')} Check my mission</button><p class="check-note">Checks your printed result${l.day === 9 ? ', map title, legend, and plotted point count' : l.day === 19 ? ', map title, legend, and layer counts' : ''}. Spacing between table columns can differ.</p>` : quiz(l)}
       <p class="feedback" id="exercise-feedback" role="status">${state.answers[l.id] ? '✓ You checked this step. You can practise it again.' : ''}</p>
       <details class="solution"><summary>See one solution</summary><p>Compare one line at a time. You can write it a different way.</p><pre><code>${highlight(l.answer)}</code></pre><button class="text-button" id="use-solution">Put this solution in the editor</button></details></div></section>
     <div class="remember-note">${icon('leaf')}<p><strong>${l.mission ? 'A useful stopping point.' : 'One idea is enough for now.'}</strong> ${l.mission ? 'You can stop here and come back. Your progress and code stay in this browser.' : 'Try the change yourself before moving on. You can always revisit this step.'}</p></div>
@@ -137,7 +136,7 @@ function quiz(l) {
 
 function lessonNavigation(l) {
   const index = lessons.indexOf(l);
-  return `<div class="completion-bar"><label><input type="checkbox" id="complete-lesson" ${done(l.id) ? 'checked' : ''}><span>Mark this ${l.mission ? 'Mission' : 'lesson'} complete</span></label><span id="completion-note">${done(l.id) ? 'Nice work. Saved here.' : 'Go at your own pace.'}</span></div><nav class="lesson-navigation" aria-label="Previous and next lessons"><button class="button secondary" id="previous" ${index === 0 ? 'disabled' : ''}><span class="reverse">${icon('arrow')}</span> Previous</button><span>${index + 1} of ${lessons.length} steps</span><button class="button primary" id="next" ${index === lessons.length - 1 ? 'disabled' : ''}>${l.mission ? 'Next day' : 'Next step'} ${icon('arrow')}</button></nav>${index === lessons.length - 1 ? '<div class="next-chapter"><strong>You\'ve reached the end of the ready lessons.</strong><p>Days 16-21 are on the roadmap. Ask for the next batch when you are ready. We\'ll keep at least five days ready ahead of your current day when extending the course.</p></div>' : ''}`;
+  return `<div class="completion-bar"><label><input type="checkbox" id="complete-lesson" ${done(l.id) ? 'checked' : ''}><span>Mark this ${l.mission ? 'Mission' : 'lesson'} complete</span></label><span id="completion-note">${done(l.id) ? 'Nice work. Saved here.' : 'Go at your own pace.'}</span></div><nav class="lesson-navigation" aria-label="Previous and next lessons"><button class="button secondary" id="previous" ${index === 0 ? 'disabled' : ''}><span class="reverse">${icon('arrow')}</span> Previous</button><span>${index + 1} of ${lessons.length} steps</span><button class="button primary" id="next" ${index === lessons.length - 1 ? 'disabled' : ''}>${l.mission ? 'Next day' : 'Next step'} ${icon('arrow')}</button></nav>${index === lessons.length - 1 ? '<div class="next-chapter"><strong>You\'ve reached the end of the course.</strong><p>Use your project brief to practise explaining your question, method, and findings aloud.</p></div>' : ''}`;
 }
 
 function interviewPage(topic) {
