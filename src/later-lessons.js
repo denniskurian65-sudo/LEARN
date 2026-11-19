@@ -222,9 +222,223 @@ add(15, 'percent', 'Turn area into a percentage', 'The team needs a share of lan
   'Add Covered area (m2): rounded to one decimal.', 'Print the covered variable. It already holds the clipped area.',
   `study = box(540000, 4810000, 540020, 4810020)\ncovered = crowns.union_all().intersection(study).area\ncover_pct = covered / study.area * 100\nprint("Study area (m2):", study.area)\nprint("Canopy cover (%):", round(cover_pct, 1))\nprint("Covered area (m2):", round(covered, 1))`, 'What is the denominator in canopy cover percent?', ['The study area.', 'The number of trees.', 'The sum of trunk diameters.']);
 add(15, 'mission', 'Mission: shade, measured carefully', 'Write the first small canopy report. Include the number, its units, and its limits.',
-  ['Combine the crowns, clip them to the practice plot, and calculate the covered percentage.', 'End with a plain note: Practice circles only. Not measured City canopy. This is a method check, not a Kitchener finding.', 'Next, Day 16 will compare wards. Days 16-21 remain roadmap items until you ask for the next batch.'], overlap,
+  ['Combine the crowns, clip them to the practice plot, and calculate the covered percentage.', 'End with a plain note: Practice circles only. Not measured City canopy. This is a method check, not a Kitchener finding.', 'Next, Day 16 compares canopy percentages across practice wards.'], overlap,
   `study = box(540000, 4810000, 540020, 4810020)\nprint("Study area (m2):", study.area)`,
   'Print Study area (m2), Covered area (m2), and Canopy cover (%) to one decimal place. Add the practice-data note.', 'Use union_all().intersection(study).area. Divide by study.area and multiply by 100.',
   `study = box(540000, 4810000, 540020, 4810020)\ncovered = crowns.union_all().intersection(study).area\nprint("Study area (m2):", round(study.area, 1))\nprint("Covered area (m2):", round(covered, 1))\nprint("Canopy cover (%):", round(covered / study.area * 100, 1))\nprint("Practice circles only. Not measured City canopy.")`, null, null, 0, true);
+
+// The final week reuses the practice wards and crowns. The park layout is invented.
+const canopyReport = `${canopy}footprint = crowns.geometry.union_all()
+report = wards.copy()
+report["CANOPY_PCT"] = report.geometry.intersection(footprint).area / report.geometry.area * 100
+`;
+const access = `${canopyReport}# An invented park west of the two practice wards.
+park = box(539800, 4810150, 540000, 4810350)
+reach = park.buffer(800)
+`;
+const accessReport = `${access}report["BEYOND_PCT"] = report.geometry.difference(reach).area / report.geometry.area * 100
+`;
+const priority = `${accessReport}# Teaching thresholds only. These are not planting standards.
+report["REVIEW"] = (report["CANOPY_PCT"] < 0.1) & (report["BEYOND_PCT"] > 10)
+`;
+const map = `${priority}import matplotlib.pyplot as plt
+
+def draw_map(title, show_park=True, show_buffer=True):
+    fig, ax = plt.subplots(figsize=(7, 4))
+    report.plot(ax=ax, color=report["REVIEW"].map({True: "#d19a4a", False: "#bad5b3"}),
+                edgecolor="#314637")
+    if show_buffer:
+        gpd.GeoSeries([reach], crs=report.crs).boundary.plot(ax=ax, color="#315c9b", linestyle="--")
+    if show_park:
+        gpd.GeoSeries([park], crs=report.crs).plot(ax=ax, color="#26583a")
+    for row in report.itertuples():
+        label = row.geometry.representative_point()
+        ax.annotate(row.WARD, (label.x, label.y), ha="center")
+    ax.set_xlim(539750, 541050)
+    ax.set_ylim(4809900, 4810600)
+    ax.set_axis_off()
+    ax.set_title(title)
+    fig.text(0.5, 0.04, "Invented practice data | NAD83 / UTM 17N", ha="center")
+    return fig, ax
+`;
+const metrics = 'print(report[["WARD", "CANOPY_PCT", "BEYOND_PCT"]].round(2).to_string(index=False))';
+const shortlist = 'print("Review:", report.loc[report["REVIEW"], "WARD"].to_list())';
+
+add(16, 'clip', 'Clip the crowns by ward', 'The crew wants to compare two practice wards.',
+  ['Intersect the crown union with each ward. A crown crossing the border contributes only the part inside each ward.'], canopy,
+  'covered = wards.geometry.intersection(crowns.geometry.union_all()).area\nprint(covered.round(1).to_list())',
+  'Print just the covered area for Practice East.', 'East is at position 1.',
+  'covered = wards.geometry.intersection(crowns.geometry.union_all()).area\nprint(round(covered.iloc[1], 1))',
+  'What does intersection keep?', ['The area common to both shapes.', 'Every part of both shapes.', 'Only tree centres.']);
+add(16, 'share', 'Use the same denominator rule', 'You need percentages that can be compared across wards.',
+  ['Divide each clipped area by the area of its own ward. Multiply by 100 before rounding.'], canopyReport,
+  'print(report[["WARD", "CANOPY_PCT"]].round(2).to_string(index=False))',
+  'Show the cover percentages to three decimal places.', 'Change round(2) to round(3).',
+  'print(report[["WARD", "CANOPY_PCT"]].round(3).to_string(index=False))',
+  'Which area goes in the denominator?', ['The area of the individual ward.', 'The area of both wards together.', 'The area of the crowns.']);
+add(16, 'rank', 'Rank the practice wards', 'A sorted report puts the highest share first.',
+  ['Sort using the unrounded values. Round the printed copy so close values can still be ordered correctly.'], canopyReport,
+  'ranked = report.sort_values("CANOPY_PCT", ascending=False)\nprint(ranked["WARD"].to_list())',
+  'Reverse the order so the lowest share comes first.', 'Use ascending=True.',
+  'ranked = report.sort_values("CANOPY_PCT", ascending=True)\nprint(ranked["WARD"].to_list())',
+  'When should you round for display?', ['After sorting.', 'Before measuring area.', 'Before creating geometry.']);
+add(16, 'mission', 'Mission: the canopy comparison', 'Give the team a ranked table and explain what it measures.',
+  ['Include both wards. Practice West has the higher estimated cover in this sample.'], canopyReport,
+  'print(report["WARD"].to_list())',
+  'Print WARD and CANOPY_PCT from highest to lowest, rounded to three decimal places. End with Invented crown estimates.',
+  'Sort before selecting and rounding the displayed columns.',
+  'ranked = report.sort_values("CANOPY_PCT", ascending=False)\nprint(ranked[["WARD", "CANOPY_PCT"]].round(3).to_string(index=False))\nprint("Invented crown estimates.")',
+  null, null, 0, true);
+
+add(17, 'distance', 'Draw a distance limit', 'Today you screen for parts of wards far from the practice park.',
+  ['The buffer puts an 800 metre straight-line zone around the park polygon. Walking routes depend on pathways, entrances, and barriers.'], access,
+  'print("Zone area (ha):", round(reach.area / 10000, 1))',
+  'Use a 400 metre buffer and print its area in hectares.', 'Change the buffer distance before measuring.',
+  'reach = park.buffer(400)\nprint("Zone area (ha):", round(reach.area / 10000, 1))',
+  'What kind of distance does the buffer represent?', ['Straight-line distance from the park.', 'Walking time from a park entrance.', 'A route along roads.']);
+add(17, 'difference', 'Find the land beyond the buffer', 'Some practice land falls outside the 800 metre zone.',
+  ['difference() subtracts the covered part from each ward. An empty result has area zero.'], access,
+  'outside = wards.geometry.difference(reach)\nprint(outside.area.round().to_list())',
+  'Print the outside area for each ward in hectares, to two decimal places.', 'One hectare is 10,000 square metres.',
+  'outside = wards.geometry.difference(reach)\nprint((outside.area / 10000).round(2).to_list())',
+  'Which operation keeps land outside the zone?', ['Ward minus buffer using difference().', 'A union of ward and buffer.', 'An intersection with the buffer.']);
+add(17, 'share', 'Report the share beyond 800 metres', 'The crew needs a percent for each ward.',
+  ['Divide the outside area by total ward area. This is a land-area share. It does not estimate how many people live outside the zone.'], accessReport,
+  'print(report[["WARD", "BEYOND_PCT"]].round(2).to_string(index=False))',
+  'Print only wards with a positive outside share.', 'Filter using BEYOND_PCT > 0.',
+  'outside = report.loc[report["BEYOND_PCT"] > 0, ["WARD", "BEYOND_PCT"]]\nprint(outside.round(2).to_string(index=False))',
+  'What does the percentage describe?', ['A share of ward land area.', 'A share of residents.', 'The number of park entrances.']);
+add(17, 'mission', 'Mission: the park distance report', 'Hand the team a short report they can read without a map.',
+  ['Keep zero values in the report. Sort by how much ward land falls beyond the zone.'], accessReport,
+  'print("Distance threshold (m):", 800)',
+  'Print WARD and BEYOND_PCT, largest first, to two decimal places. End with Straight-line distance from a practice park.',
+  'Sort by BEYOND_PCT in descending order.',
+  'ranked = report.sort_values("BEYOND_PCT", ascending=False)\nprint(ranked[["WARD", "BEYOND_PCT"]].round(2).to_string(index=False))\nprint("Straight-line distance from a practice park.")',
+  null, null, 0, true);
+
+add(18, 'metrics', 'Put both measures on one row', 'The arborist wants canopy and park distance side by side.',
+  ['Both metrics were calculated on the same ward geometry. That gives each ward one row with two measures.'], accessReport, metrics,
+  'Print only the Practice East row with both metrics.', 'Filter WARD before selecting the three report columns.',
+  'east = report[report["WARD"] == "Practice East"]\nprint(east[["WARD", "CANOPY_PCT", "BEYOND_PCT"]].round(2).to_string(index=False))',
+  'Why use the same ward boundaries?', ['The measures then cover the same areas.', 'It makes the percentages identical.', 'It removes the need for units.']);
+add(18, 'rule', 'Write a transparent review rule', 'For practice, flag wards that meet both cutoffs.',
+  ['Low canopy means below 0.1%. More than 10% of ward land must also fall beyond the park buffer. These cutoffs are invented for the exercise.'], priority,
+  'print(report[["WARD", "REVIEW"]].to_string(index=False))',
+  'Raise the outside share cutoff to 50% and print the new flags.', 'Use > 50 in the second condition.',
+  'report["REVIEW"] = (report["CANOPY_PCT"] < 0.1) & (report["BEYOND_PCT"] > 50)\nprint(report[["WARD", "REVIEW"]].to_string(index=False))',
+  'What does & require here?', ['Both conditions to be true.', 'Either condition to be true.', 'Both percentages to be equal.']);
+add(18, 'sensitivity', 'See what one cutoff changes', 'A colleague wants to know whether your result depends on the chosen cutoff.',
+  ['Keep canopy fixed and vary the park-distance share cutoff. If the shortlist changes, report that sensitivity.'], accessReport,
+  'for cutoff in [10, 50]:\n    review = (report["CANOPY_PCT"] < 0.1) & (report["BEYOND_PCT"] > cutoff)\n    print(cutoff, report.loc[review, "WARD"].to_list())',
+  'Compare cutoffs of 10%, 25%, and 50%.', 'Add 25 to the list in the loop.',
+  'for cutoff in [10, 25, 50]:\n    review = (report["CANOPY_PCT"] < 0.1) & (report["BEYOND_PCT"] > cutoff)\n    print(cutoff, report.loc[review, "WARD"].to_list())',
+  'What does a changed shortlist tell you?', ['The result depends on the chosen cutoff.', 'The CRS must be wrong.', 'The park moved.']);
+add(18, 'mission', 'Mission: shortlist a ward for review', 'Share your shortlist with the field crew for follow-up.',
+  ['A screening flag identifies where to look next. Check planting space, site conditions, and land ownership before proposing a location.'], priority, metrics,
+  'Print both metrics, then Review: with the list of flagged wards. End with Check site conditions before planting.',
+  'Select rows where REVIEW is true and convert WARD to a list.',
+  metrics + '\n' + shortlist + '\nprint("Check site conditions before planting.")',
+  null, null, 0, true);
+
+add(19, 'layers', 'Give each layer a job', 'A map can show why a ward was flagged.',
+  ['Draw the wards first, the buffer edge above them, and the park in dark green. Labels name the wards directly.'], map,
+  'fig, ax = draw_map("Practice planting review")\nplt.show()',
+  'Hide the buffer edge to see how much context it adds.', 'Pass show_buffer=False to draw_map().',
+  'fig, ax = draw_map("Practice planting review", show_buffer=False)\nplt.show()',
+  'Which layer shows the distance threshold?', ['The dashed buffer edge.', 'The ward labels.', 'The park fill.']);
+const legend = `from matplotlib.lines import Line2D
+from matplotlib.patches import Patch
+
+def add_legend(ax, location="upper right"):
+    ax.legend(handles=[
+        Patch(facecolor="#d19a4a", edgecolor="#314637", label="Flagged for review"),
+        Patch(facecolor="#bad5b3", edgecolor="#314637", label="Other practice ward"),
+        Patch(facecolor="#26583a", label="Practice park"),
+        Line2D([0], [0], color="#315c9b", linestyle="--", label="800 m buffer edge"),
+    ], loc=location)
+`;
+add(19, 'legend', 'Make the colours readable', 'The map has four visual marks. Give each one a plain label.',
+  ['A legend connects symbols with their meaning. Give the review rule a clear name and label the park separately from its buffer.'], map + legend,
+  'fig, ax = draw_map("Practice planting review")\nadd_legend(ax)\nplt.show()',
+  'Move the legend to the lower left.', 'Pass "lower left" as the second argument.',
+  'fig, ax = draw_map("Practice planting review")\nadd_legend(ax, "lower left")\nplt.show()',
+  'What belongs in the legend?', ['Labels for the marks used on the map.', 'Every column in the inventory.', 'The entire Python script.']);
+add(19, 'scale', 'Show how far 200 metres is', 'The team needs a distance reference on the map.',
+  ['The plotted coordinates are metres. A line of 200 coordinate units makes a 200 metre scale bar.'], map,
+  'fig, ax = draw_map("Practice planting review")\nax.plot([539810, 540010], [4809950, 4809950], color="black")\nax.text(539910, 4809970, "200 m", ha="center")\nplt.show()',
+  'Make the bar 100 metres long and update its label and midpoint.', 'Keep the start at 539810 and end at 539910.',
+  'fig, ax = draw_map("Practice planting review")\nax.plot([539810, 539910], [4809950, 4809950], color="black")\nax.text(539860, 4809970, "100 m", ha="center")\nplt.show()',
+  'Why can you draw the bar using coordinate differences?', ['The projected coordinates use metres.', 'The ward names include units.', 'Matplotlib converts longitude to metres.']);
+add(19, 'mission', 'Mission: map the practice shortlist', 'Make a map a teammate can interpret on its own.',
+  ['Include ward names, park and buffer, legend, and a scale bar. Keep the practice-data label visible.'], map + legend,
+  'fig, ax = draw_map("Practice map")\nplt.show()',
+  'Use the title Practice planting review. Add the legend and 200 m bar. Print the review shortlist below the map.',
+  'Use add_legend(ax) and the two scale-bar lines from the previous lesson.',
+  'fig, ax = draw_map("Practice planting review")\nadd_legend(ax)\nax.plot([539810, 540010], [4809950, 4809950], color="black")\nax.text(539910, 4809970, "200 m", ha="center")\n' + shortlist + '\nplt.show()',
+  null, null, 0, true);
+
+const distanceSweep = `${canopyReport}park = box(539800, 4810150, 540000, 4810350)
+
+def outside_share(distance):
+    zone = park.buffer(distance)
+    return wards.geometry.difference(zone).area / wards.geometry.area * 100
+`;
+add(20, 'question', 'Ask one question you can test', 'You choose a question that this small dataset can answer.',
+  ['Start with a comparison: how does Practice East’s outside share change from 600 m to 800 m? Hold the park and ward boundaries fixed.'], distanceSweep,
+  'east = outside_share(600).iloc[1]\nprint("East beyond 600 m (%):", round(east, 2))',
+  'Measure East beyond 800 m instead and update the printed label.',
+  'Change the argument and the label together.',
+  'east = outside_share(800).iloc[1]\nprint("East beyond 800 m (%):", round(east, 2))',
+  'Which input changes in this question?', ['The buffer distance.', 'The park location.', 'The ward boundaries.']);
+add(20, 'compare', 'Run a fair comparison', 'Put the two distances in one table.',
+  ['Each column uses the same ward geometry and a different distance. Percentage-point change is the difference between two percentages.'], distanceSweep,
+  'comparison = pd.DataFrame({"WARD": wards["WARD"], "600_M": outside_share(600), "800_M": outside_share(800)})\nprint(comparison.round(2).to_string(index=False))',
+  'Add a DROP_PP column calculated as 600_M minus 800_M.',
+  'Subtract the column values before rounding.',
+  'comparison = pd.DataFrame({"WARD": wards["WARD"], "600_M": outside_share(600), "800_M": outside_share(800)})\ncomparison["DROP_PP"] = comparison["600_M"] - comparison["800_M"]\nprint(comparison.round(2).to_string(index=False))',
+  'What is the unit of DROP_PP?', ['Percentage points.', 'Metres.', 'Hectares.']);
+add(20, 'validate', 'Check a result you can predict', 'A larger straight-line buffer should leave the same amount of land or less outside.',
+  ['Compare the two series row by row and use all() to check every ward. If the check fails, inspect the park geometry, distances, and CRS.'], distanceSweep,
+  'print("Outside share decreases or holds:", (outside_share(800) <= outside_share(600)).all())',
+  'Check the same rule for 800 m and 1000 m.',
+  'The share at 1000 m should be less than or equal to the share at 800 m.',
+  'print("Outside share decreases or holds:", (outside_share(1000) <= outside_share(800)).all())',
+  'What should happen as distance increases?', ['Outside area should decrease or hold.', 'Outside area must grow.', 'The park moves closer.']);
+add(20, 'mission', 'Mission: answer your practice question', 'Show how sensitive East’s outside share is to the distance choice.',
+  ['Use the guided question for the automatic check. Afterward, try another pair of distances or compare both wards.'], distanceSweep,
+  'print("Question: How does East change from 600 m to 800 m?")',
+  'Keep the question. Print East’s drop in percentage points to two decimals as East drop (pp): and finish with Straight-line distance only.',
+  'Subtract the East value at 800 m from the East value at 600 m. Use an f-string with :.2f.',
+  'print("Question: How does East change from 600 m to 800 m?")\ndrop = outside_share(600).iloc[1] - outside_share(800).iloc[1]\nprint(f"East drop (pp): {drop:.2f}")\nprint("Straight-line distance only.")',
+  null, null, 0, true);
+
+add(21, 'methods', 'Describe a method someone can repeat', 'A teammate should be able to rerun your project from your summary.',
+  ['State the sample inputs, projected CRS, crown union, and 800 m park buffer. Explain that the review flag uses both cutoffs.'], priority,
+  'print("CRS:", report.crs)\nprint("Practice wards:", len(report))',
+  'Add Buffer distance (m): 800 to the method summary.',
+  'Use one more print() line with the distance.',
+  'print("CRS:", report.crs)\nprint("Practice wards:", len(report))\nprint("Buffer distance (m):", 800)',
+  'What lets a teammate repeat the distance calculation?', ['The distance, units, and projected CRS.', 'A screenshot alone.', 'The largest tree diameter.']);
+add(21, 'evidence', 'Connect the result to the rule', 'Be ready to say why the flagged ward appeared on your shortlist.',
+  ['Show the two metrics beside the flag. A ranking without the inputs makes it hard to check the result.'], priority,
+  metrics,
+  'Add REVIEW to the printed columns.',
+  'Include REVIEW as the fourth column.',
+  'print(report[["WARD", "CANOPY_PCT", "BEYOND_PCT", "REVIEW"]].round(2).to_string(index=False))',
+  'What supports the review flag?', ['The two reported metrics and the stated cutoffs.', 'The ward’s name.', 'The colour by itself.']);
+add(21, 'limits', 'Say what you would verify next', 'A clear project explanation ends with a concrete follow-up.',
+  ['Explain that boundaries, crowns, and park locations are invented. For real planning, seek verified data, check walking routes, and visit candidate sites.'], priority,
+  shortlist + '\nprint("Limits: invented data and straight-line distance.")',
+  'Add the line Next: verify park entrances and walking routes.',
+  'Add a print() line after the limits.',
+  shortlist + '\nprint("Limits: invented data and straight-line distance.")\nprint("Next: verify park entrances and walking routes.")',
+  'What would improve the park access analysis?', ['Verified entrances and a walkable route network.', 'A brighter ward colour.', 'More decimal places.']);
+add(21, 'mission', 'Mission: present your final project', 'Prepare a short project brief you can talk through in an interview.',
+  ['Start with the question, give the method and result, and end with a limitation and next step. Try explaining the brief aloud in one minute.'], priority,
+  'print("Question: Which practice ward should we review first?")',
+  'Keep the question. Print the method, both metrics, and the review list. End with the limits and next-step lines from the previous lesson.',
+  'Print Method: crown union and 800 m park buffer in EPSG:26917. Then reuse the results table and shortlist.',
+  'print("Question: Which practice ward should we review first?")\nprint("Method: crown union and 800 m park buffer in EPSG:26917.")\n' + metrics + '\n' + shortlist + '\nprint("Limits: invented data and straight-line distance.")\nprint("Next: verify park entrances and walking routes.")',
+  null, null, 0, true);
 
 export const laterLessons = items;
